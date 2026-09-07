@@ -70,3 +70,5 @@ Generates production-ready static assets in `dist/`.
 ## License
 
 MIT
+
+<!-- auto-sync: active -->
