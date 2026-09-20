@@ -1,6 +1,6 @@
 {
-  "name": "PDF-First Editor",
-  "short_name": "PDF Editor",
+  "name": "PDFirst",
+  "short_name": "PDFirst",
   "description": "Reflowable Document Editor and High-Fidelity Vector PDF Compiler",
   "start_url": "/",
   "display": "standalone",

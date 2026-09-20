@@ -11,8 +11,8 @@ describe('Progressive Web App (PWA) Manifest & Service Worker', () => {
     const manifest = JSON.parse(rawManifest);
 
     it('should have exact required names and entry URLs', () => {
-      expect(manifest.name).toBe('PDF-First Editor');
-      expect(manifest.short_name).toBe('PDF Editor');
+      expect(manifest.name).toBe('PDFirst');
+      expect(manifest.short_name).toBe('PDFirst');
       expect(manifest.start_url).toBe('/');
       expect(manifest.display).toBe('standalone');
     });
@@ -87,6 +87,29 @@ describe('Progressive Web App (PWA) Manifest & Service Worker', () => {
     it('should handle triggerInstallPrompt safely when no deferredPrompt is available', async () => {
       const result = await pwaManager.triggerInstallPrompt();
       expect(result).toBe(false);
+    });
+  });
+
+  describe('4. In-App Mobile PWA Install Guidance Hint', () => {
+    const bannerPath = path.resolve('src/components/common/PwaInstallBanner.tsx');
+
+    it('should have PwaInstallBanner component file', () => {
+      expect(fs.existsSync(bannerPath)).toBe(true);
+    });
+
+    it('should contain the exact required user instruction text', () => {
+      const content = fs.readFileSync(bannerPath, 'utf-8');
+      expect(content).toContain("Install PDFirst on your phone: tap");
+      expect(content).toContain("Add to Home Screen");
+      expect(content).toContain("in your browser menu.");
+      expect(content).toContain("pwa-install-hint");
+      expect(content).toContain("btn-dismiss-pwa-hint");
+    });
+
+    it('should persist dismissal state to localStorage', () => {
+      const content = fs.readFileSync(bannerPath, 'utf-8');
+      expect(content).toContain("localStorage.getItem('pdfirst_pwa_hint_dismissed')");
+      expect(content).toContain("localStorage.setItem('pdfirst_pwa_hint_dismissed', 'true')");
     });
   });
 });

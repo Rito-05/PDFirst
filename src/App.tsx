@@ -13,6 +13,7 @@ import { InsertTableModal } from './components/modals/InsertTableModal';
 import { LinkModal } from './components/modals/LinkModal';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { HealthCheck } from './components/common/HealthCheck';
+import { PwaInstallBanner } from './components/common/PwaInstallBanner';
 import { pwaManager, PwaInstallState } from './pwa/pwaManager';
 
 import { getDocument, saveDocument } from './storage/documentRepository';
@@ -202,6 +203,7 @@ export const App: React.FC = () => {
   return (
     <ErrorBoundary>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100vw', overflow: 'hidden' }}>
+        <PwaInstallBanner />
         {view === 'dashboard' ? (
           <DocumentDashboard
             onOpenDocument={handleOpenDocById}

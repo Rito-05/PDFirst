@@ -12,6 +12,10 @@ export default defineConfig({
     include: ['pdfjs-dist', 'react', 'react-dom']
   },
   server: {
-    port: 5173
+    port: 5173,
+    strictPort: true,
+    watch: {
+      ignored: ['**/release/**']
+    }
   }
 });

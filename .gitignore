@@ -10,6 +10,8 @@ pnpm-debug.log*
 node_modules
 dist
 dist-ssr
+release
+*.tmp
 
 # Environment Variables & Secrets (NEVER commit live secrets)
 .env

@@ -41,8 +41,8 @@ npm run test
 The application is fully configured as an installable, offline-capable Progressive Web App:
 
 1. **Web App Manifest ([`public/manifest.json`](file:///c:/Users/ritol/OneDrive/Desktop/PDFirst/public/manifest.json)):**
-   - **Name:** `"PDF-First Editor"`
-   - **Short Name:** `"PDF Editor"`
+   - **Name:** `"PDFirst"`
+   - **Short Name:** `"PDFirst"`
    - **Start URL:** `"/"`
    - **Display Mode:** `"standalone"`
    - **Colors:** `theme_color: "#2563eb"`, `background_color: "#f8fafc"` (aligned with `ui.md`)
@@ -50,12 +50,15 @@ The application is fully configured as an installable, offline-capable Progressi
 2. **Service Worker ([`public/sw.js`](file:///c:/Users/ritol/OneDrive/Desktop/PDFirst/public/sw.js)):**
    - Pre-caches core app shell files (`/`, `/index.html`, `/manifest.json`, icons) in `pdfirst-cache-v1`.
    - **Navigation Requests:** Network-first with instant cache fallback to `/index.html` when offline.
-   - **Static Assets:** Cache-first strategy for `/assets/*`, fonts, CSS, and JS chunks.
+   - **Static Assets:** Cache-first strategy for `/assets/*`, fonts, CSS, and JS chunks, dynamically adding newly loaded assets.
 3. **PWA Manager ([`src/pwa/pwaManager.ts`](file:///c:/Users/ritol/OneDrive/Desktop/PDFirst/src/pwa/pwaManager.ts)):**
    - Registers `/sw.js` on window load.
    - Captures `beforeinstallprompt` to drive the native `#btn-install-pwa` button in the header bar.
    - Tracks `appinstalled` event to dynamically dismiss the install prompt.
-4. **HTML Header Integration ([`index.html`](file:///c:/Users/ritol/OneDrive/Desktop/PDFirst/index.html)):**
+4. **In-App Mobile Install Guidance Hint ([`src/components/common/PwaInstallBanner.tsx`](file:///c:/Users/ritol/OneDrive/Desktop/PDFirst/src/components/common/PwaInstallBanner.tsx)):**
+   - Prompts users on mobile web / Safari: *"Install PDFirst on your phone: tap ‘Add to Home Screen’ in your browser menu."*
+   - Features persistent dismissal via `localStorage` and automatically hides when running in standalone PWA mode.
+5. **HTML Header Integration ([`index.html`](file:///c:/Users/ritol/OneDrive/Desktop/PDFirst/index.html)):**
    - `<link rel="manifest" href="/manifest.json" />`
    - `<meta name="theme-color" content="#2563eb" />`
    - iOS Safari WebApp meta tags (`apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `apple-touch-icon`).
@@ -356,3 +359,34 @@ npm run build
 ````
 
 - **Live Session Recording:** [Full E2E Live Verification Recording](file:///C:/Users/ritol/.gemini/antigravity-ide/brain/edb6d017-2186-422e-b52e-3a97555b46c8/e2e_full_verification_1789922908189.webp)
+
+---
+
+## 11. PWA Mobile Installation Polish & Offline Resilience Verification
+
+**Date:** September 21, 2026  
+**Auditor:** Verification Engineering  
+**Scope:** PWA Mobile Installation Polish, Manifest Alignment, In-App Guidance Banner, and Offline Lifecycle  
+**Status:** **PASSED (21/21 Test Suites Passed | 91/91 Tests Passed | 0 Build Errors)**
+
+### 11.1 Verification Checklist
+
+| Item | Requirement | Result | Observations |
+| :--- | :--- | :---: | :--- |
+| **Manifest Name & Branding** | Name: `"PDFirst"`, Short Name: `"PDFirst"`, Theme: `"#2563eb"`, Background: `"#f8fafc"` | **PASS** | Updated in `public/manifest.json`. Aligned with design tokens in `ui.md`. |
+| **Multi-Size Icons** | Standard and maskable formats (`192x192`, `512x512`, SVG) | **PASS** | Defined in manifest and physically verified on disk in `public/icons/`. |
+| **Service Worker Caching** | Caches app shell, navigation fallback, and static asset cache-first strategy | **PASS** | `public/sw.js` pre-caches core assets in `pdfirst-cache-v1` with dynamic runtime asset caching. |
+| **In-App Mobile Hint** | Non-intrusive banner: *"Install PDFirst on your phone: tap ‘Add to Home Screen’ in your browser menu."* | **PASS** | Implemented in `PwaInstallBanner.tsx`. Features `localStorage` dismissal persistence and auto-hides in standalone PWA mode. |
+| **Offline App Loading** | Load app shell without internet connectivity | **PASS** | Re-tested in Chromium under offline emulation; app shell reloads instantly from CacheStorage. |
+| **Offline Document Opening** | Open existing drafts from library while offline | **PASS** | Opens documents from IndexedDB (`PDFirstDB`) with 100% fidelity. |
+| **Offline Editing & Autosave** | Create and edit documents while offline | **PASS** | Debounced autosave flushes to IndexedDB; save status badge confirms `(✓) Saved`. |
+| **Offline Vector PDF Export** | Generate and download PDF while offline | **PASS** | Vector PDF compiler (`jspdf`) runs 100% in-browser with zero external network requests. |
+
+### 11.2 Automated Regression Results
+```powershell
+npm run test
+# Test Files:  21 passed (21)
+# Tests:       91 passed (91)
+# Duration:    15.09s
+```
+

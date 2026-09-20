@@ -699,8 +699,8 @@ To preserve engineering velocity and focus on core value:
 
 ### 13.1 Web App Manifest Configuration (`public/manifest.json`)
 The application defines a standard PWA manifest meeting all Chromium, Safari, and Firefox installation criteria:
-- **`name`:** `"PDF-First Editor"`
-- **`short_name`:** `"PDF Editor"`
+- **`name`:** `"PDFirst"`
+- **`short_name`:** `"PDFirst"`
 - **`start_url`:** `"/"`
 - **`display`:** `"standalone"` (fullscreen application shell without browser address bar)
 - **`theme_color`:** `"#2563eb"` (matching `--color-brand-primary` from `ui.md`)
@@ -717,7 +717,7 @@ The application registers a dedicated service worker implementing a two-tier off
    - Online requests fetch fresh HTML and update the cache; offline requests immediately fall back to the pre-cached `/index.html` shell.
 3. **Static Assets (`/assets/*`, fonts, CSS, JS chunks):**
    - Implements **Cache-First with Network Fallback**.
-   - Repeated requests serve from CacheStorage in 0ms with zero network overhead.
+   - Repeated requests serve from CacheStorage in 0ms with zero network overhead. Newly encountered assets are dynamically added to `pdfirst-cache-v1`.
 4. **Cache Lifecycle Maintenance (`activate` event):**
    - Stale cache versions (non-matching keys) are pruned automatically.
    - `self.clients.claim()` takes immediate control of all active tabs.
@@ -728,10 +728,17 @@ The application registers a dedicated service worker implementing a two-tier off
 - On user click, invokes `deferredPrompt.prompt()` and tracks the resulting choice (`accepted` or `dismissed`).
 - Automatically hides the install button upon `appinstalled` event.
 
-### 13.4 How to Test Offline Behavior
+### 13.4 In-App Mobile PWA Install Guidance Hint (`PwaInstallBanner.tsx`)
+Because iOS Safari and certain mobile browsers do not support the programmatic `beforeinstallprompt` API, PDFirst includes a non-intrusive mobile install banner (`#pwa-install-hint`):
+- **Guidance Copy:** *"Install PDFirst on your phone: tap ‘Add to Home Screen’ in your browser menu."*
+- **Visual Design:** Rendered as a compact banner docked at the top of the viewport with a mobile smartphone icon and soft brand highlight styling (`--color-brand-subtle`).
+- **Dismissal Persistence:** Dismissing via `#btn-dismiss-pwa-hint` persists `pdfirst_pwa_hint_dismissed: 'true'` in `localStorage` so users are not repeatedly prompted.
+- **Standalone Mode Detection:** Automatically hides if the application is already running in `display-mode: standalone` (i.e. installed as a PWA or WebAPK).
+
+### 13.5 How to Test Offline Behavior
 1. **First-Load Caching:**
-   - Launch the application (`http://localhost:5173/`).
-   - Open Chrome DevTools $\to$ Application $\to$ Service Workers; confirm status is `activated and is running`.
+   - Launch the application (`http://localhost:5173/` or production preview `http://localhost:4173/`).
+   - Open Chrome DevTools $\to$ **Application** $\to$ **Service Workers**; confirm status is `activated and is running`.
    - Verify Cache Storage contains `pdfirst-cache-v1` with `/index.html`, `/manifest.json`, and asset bundles.
 2. **Simulate Offline Mode:**
    - In Chrome DevTools, open the **Network** tab and select the **Offline** preset (or toggle **Offline** under Application $\to$ Service Workers).
@@ -739,23 +746,23 @@ The application registers a dedicated service worker implementing a two-tier off
    - Verify that the application shell, editor canvas, and library load instantly without dinosaur/no-internet screens.
 3. **Offline Document Editing & Persistence:**
    - Create a new document or open an existing draft while offline.
-   - Type paragraphs, apply headings, insert tables.
+   - Type paragraphs, apply headings, insert tables, add block borders, and style text.
    - Observe that the autosave status updates to `(✓) Saved [Time]` (stored safely in IndexedDB `PDFirstDB`).
    - Reload the page while still offline; verify that the newly typed content rehydrates with 100% fidelity.
 4. **Offline PDF Export:**
    - Click "Export PDF" while offline.
    - Vector compilation via `jspdf` executes 100% client-side in-browser without network requests; the vector PDF downloads immediately.
 
-### 13.5 Offline Capabilities & Constraints
+### 13.6 Offline Capabilities, Constraints & Browser Differences
 | Feature | Offline Behavior | Constraints / Fallbacks |
 | :--- | :--- | :--- |
 | **App Shell & Editor** | 100% Functional | Cached in CacheStorage via Service Worker. |
-| **Document Storage & Autosave** | 100% Functional | Persists directly to IndexedDB (`PDFirstDB`). |
-| **Vector PDF Export** | 100% Functional | Compiles vector commands entirely client-side using `jspdf`. |
-| **Text-Based PDF Import** | 100% Functional | Extracts text streams client-side using `pdfjs-dist` worker. |
-| **Embedded Images** | 100% Functional for Base64 / Local Blobs | External web images (`https://...`) cannot be fetched while offline. |
-| **Web Fonts** | Cached Fallback | Google Fonts are cached upon first load; if accessed offline before caching, falls back to system sans-serif (`-apple-system, BlinkMacSystemFont, Segoe UI, Roboto`). |
-| **Cloud Synchronization** | Paused (Queued in Outbox) | Outbox queues changes in IndexedDB until connectivity returns. |
+| **Document Storage & Autosave** | 100% Functional | Persists directly to IndexedDB (`PDFirstDB`). Protected via `navigator.storage.persist()`. |
+| **Vector PDF Export** | 100% Functional | Compiles vector commands entirely client-side using `jspdf`. Downloads via synthetic anchor or File System API. |
+| **Text-Based PDF Import** | 100% Functional | Extracts text streams client-side using `pdfjs-dist` worker bundled locally. |
+| **Embedded Images** | 100% Functional for Base64 / Local Blobs | External web images (`https://...`) cannot be fetched while offline. Local file uploads (`#toolbar-upload-image`) are recommended. |
+| **Web Fonts** | Cached Fallback | Google Fonts (Inter, Merriweather, JetBrains Mono) are cached upon first load; if accessed offline before caching, falls back to system sans-serif (`-apple-system, BlinkMacSystemFont, Segoe UI, Roboto`). |
+| **Browser Differences (Chromium vs iOS Safari)** | Native install prompt on Chrome/Edge (Android & Desktop); iOS Safari requires manual Share $\to$ "Add to Home Screen". | Safari restricts background sync and can evict uninstalled websites after 7 days of inactivity; installing to Home Screen creates a durable container exempt from this rule. |
 
 ---
 
