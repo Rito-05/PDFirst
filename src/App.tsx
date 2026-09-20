@@ -267,30 +267,38 @@ export const App: React.FC = () => {
           />
         )}
 
-        <ImportReviewModal
-          isOpen={isImportModalOpen}
-          onImportSuccess={handleImportSuccess}
-          onClose={() => setIsImportModalOpen(false)}
-        />
+        {isImportModalOpen && (
+          <ImportReviewModal
+            isOpen={isImportModalOpen}
+            onImportSuccess={handleImportSuccess}
+            onClose={() => setIsImportModalOpen(false)}
+          />
+        )}
 
-        <InsertImageModal
-          isOpen={isImageModalOpen}
-          onInsert={handleInsertImage}
-          onClose={() => setIsImageModalOpen(false)}
-        />
+        {isImageModalOpen && (
+          <InsertImageModal
+            isOpen={isImageModalOpen}
+            onInsert={handleInsertImage}
+            onClose={() => setIsImageModalOpen(false)}
+          />
+        )}
 
-        <InsertTableModal
-          isOpen={isTableModalOpen}
-          onInsert={handleInsertTable}
-          onClose={() => setIsTableModalOpen(false)}
-        />
+        {isTableModalOpen && (
+          <InsertTableModal
+            isOpen={isTableModalOpen}
+            onInsert={handleInsertTable}
+            onClose={() => setIsTableModalOpen(false)}
+          />
+        )}
 
-        <LinkModal
-          isOpen={isLinkModalOpen}
-          initialUrl={editorInstance?.getAttributes('link')?.href || ''}
-          onSave={handleApplyLink}
-          onClose={() => setIsLinkModalOpen(false)}
-        />
+        {isLinkModalOpen && (
+          <LinkModal
+            isOpen={isLinkModalOpen}
+            initialUrl={editorInstance?.getAttributes('link')?.href || ''}
+            onSave={handleApplyLink}
+            onClose={() => setIsLinkModalOpen(false)}
+          />
+        )}
       </div>
     </ErrorBoundary>
   );
