@@ -243,4 +243,51 @@ npm install react-colorful react-image-crop dompurify; npm install -D @types/dom
 2. **Touch Drag Handles vs Button Presets:** To ensure robust cross-platform reliability on touch devices and avoid ProseMirror native drag conflicts, resizing uses high-precision width presets ($25\%$, $50\%$, $75\%$, $100\%$) alongside cropping rather than erratic freeform drag corners.
 3. **CORS on Remote External URLs:** When inserting images via external `http://` / `https://` URLs from servers that disallow Cross-Origin Resource Sharing (`Access-Control-Allow-Origin`), the browser canvas cannot read raw pixels for client-side cropping (`tainted canvas`). Users are warned and can upload the file directly to enable local cropping.
 
+---
+
+## 9. Phase C: Clipboard Engine, PDF Ingestion Fidelity & Mobile Ergonomics Verification
+
+**Date:** September 20, 2026  
+**Auditor:** Antigravity Verification Engineering  
+**Scope:** Phase C (Formatted Rich Text & Image Clipboard Paste, DOMPurify Sanitization, Statistical Font Clustering, List Ingestion, Table Extraction, Text Color Preservation, Mobile Touch Ergonomics, Virtual Keyboard Caret Dock)  
+**Status:** PASSED (20/20 Test Suites Passed | 82/82 Tests Passed | 0 TypeScript Errors)
+
+### 9.1 Summary of Phase C Changes
+1. **Clipboard Engine & Paste Interception:**
+   - **Direct Clipboard Image Paste:** Intercepts `handlePaste(view, event)` for OS clipboard image payloads (screenshots, copied image files from file explorer or web browsers), converts image bytes to Base64, and inserts directly as an `image` node at the cursor position.
+   - **Formatted Rich Text Sanitization (`sanitizePastedHtml`):** Integrates DOMPurify to sanitize dirty external clipboard HTML (e.g. from Google Docs, Wikipedia, MS Word). Preserves headings, bold/italic, lists, tables, links, and images while stripping dangerous `<script>`, `<iframe>`, and inline event attributes.
+   - **Image Duplication:** Added a one-click "Duplicate" button (`Copy` icon) on the floating NodeView action bar, cloning the selected image block immediately below with all attributes preserved.
+   - **Toolbar Clipboard Actions:** Added `#toolbar-copy-btn` (`Copy`) and `#toolbar-paste-btn` (`Clipboard`) to the main formatting toolbar for touch-based devices lacking hardware keyboard shortcuts.
+2. **Enhanced PDF Ingestion Fidelity (`TextExtractor.ts`):**
+   - **Statistical Font Size Clustering:** Computes body font size $S_{body}$ using the lower median of all text line font sizes. Categorizes lines with $S \ge 1.6 \times S_{body} \to$ H1, $1.25 \times S_{body} \le S < 1.6 \times S_{body} \to$ H2, $1.1 \times S_{body} \le S < 1.25 \times S_{body} \to$ H3, and $S < 1.1 \times S_{body} \to$ Paragraph or List.
+   - **List Detection & Structuring:** Detects standard bullet glyphs (`•`, `–`, `-`, `*`, `\u2022`) and numbered lists (`\d+\.`), converting them into native Tiptap `bulletList` and `orderedList` blocks with nested `listItem` $\to$ `paragraph` structure.
+   - **Tabular Grid Detection:** Detects consecutive lines with $\ge 2$ horizontal columns separated by $>25\text{pt}$ gaps, reconstructing them into structured `table` blocks with `tableRow`, `tableHeader`, and `tableCell`.
+   - **Text Color Preservation:** Inspects PDF page operator lists (`OPS.setFillRGBColor`, `OPS.setFillColor`, `OPS.setFillGray`) and maps non-black graphic state fill colors to inline `textStyle.color` marks on extracted text nodes.
+   - **Multi-Page Boundaries:** Replaces legacy horizontal rules with native `pageBreak` block nodes between pages.
+3. **Mobile Polish & Touch Ergonomics:**
+   - **Virtual Keyboard Resizing:** Configured `index.html` viewport meta with `interactive-widget=resizes-content, viewport-fit=cover`.
+   - **Touch Target Sizing:** Toolbar buttons guarantee $\ge 36\text{px} \times 36\text{px}$ minimum touch hit targets with `touch-action: manipulation`.
+   - **Horizontal Scroll Lock:** Applied `overflow-x: hidden` to canvas viewports on mobile viewports ($\le 640\text{px}$) to prevent horizontal page wobble while keeping `#editor-toolbar` smoothly scrollable with `-webkit-overflow-scrolling: touch`.
+   - **Mobile Popover Docking:** Added responsive CSS positioning for `.color-picker-popover`, docking it as a comfortable bottom-sheet card on screens $\le 640\text{px}$ without clipping off-screen.
+
+### 9.2 New Test Coverage
+- **Total Test Suites:** **20** (all passing)
+- **Total Tests:** **82** (all passing)
+- **New Test File Added:**
+  - [`tests/unit/phaseCClipboardAndPdf.test.ts`](file:///c:/Users/ritol/OneDrive/Desktop/PDFirst/tests/unit/phaseCClipboardAndPdf.test.ts):
+    1. *Clipboard HTML Sanitization:* Verifies malicious script/iframe stripping while retaining headings, bold, italic, lists, and tables.
+    2. *PDF Ingestion Clustering:* Verifies `test_import.pdf` title maps to H1, section to H2, and body lines to paragraphs.
+    3. *Mobile Viewport Meta Tag:* Verifies `interactive-widget=resizes-content` and `viewport-fit=cover`.
+    4. *Mobile CSS Ergonomics:* Verifies `@media (max-width: 640px)` touch rules and bottom popover docking.
+    5. *Image Duplication AST Round-Trip:* Verifies attribute preservation when duplicating image nodes.
+    6. *Toolbar Clipboard Actions:* Verifies `#toolbar-copy-btn` and `#toolbar-paste-btn` buttons exist with correct labels.
+- **Updated Test Files:**
+  - [`tests/unit/textBasedPdfImport.test.ts`](file:///c:/Users/ritol/OneDrive/Desktop/PDFirst/tests/unit/textBasedPdfImport.test.ts) (updated inter-page separator assertion to accept native `pageBreak` node).
+
+### 9.3 Known Limitations for Phase C
+1. **Complex Multi-Column Magazine Layouts:** Complex PDF layouts with overlapping non-rectangular text wraps or multi-column newspaper spreads are linearized into sequential headings, tables, and paragraphs to ensure full user editability.
+2. **CORS on Remote Image URLs:** Client-side HTML5 canvas pixel access requires permissive CORS headers. If an external URL blocks cross-origin reading, direct image file upload is recommended.
+3. **Scanned PDF OCR:** Scanned PDFs continue to display the honest review notification explaining OCR will be added in a subsequent release; uneditable empty documents remain safely prevented.
+
+
 

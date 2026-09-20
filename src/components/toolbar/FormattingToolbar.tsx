@@ -22,7 +22,9 @@ import {
   Table as TableIcon,
   Minus,
   FilePlus,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Copy,
+  Clipboard
 } from 'lucide-react';
 import { ColorPickerPopover } from '../common/ColorPickerPopover';
 
@@ -131,6 +133,42 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         style={btnStyle(false, !editor.can().redo())}
       >
         <Redo size={16} />
+      </button>
+
+      <button
+        id="toolbar-copy-btn"
+        type="button"
+        aria-label="Copy Selection (Ctrl+C)"
+        title="Copy Selection (Ctrl+C)"
+        onClick={() => {
+          const { from, to } = editor.state.selection;
+          if (from !== to) {
+            const selectedText = editor.state.doc.textBetween(from, to, ' ');
+            navigator.clipboard?.writeText(selectedText).catch(() => {});
+          }
+        }}
+        style={btnStyle(false, false)}
+      >
+        <Copy size={16} />
+      </button>
+
+      <button
+        id="toolbar-paste-btn"
+        type="button"
+        aria-label="Paste from Clipboard (Ctrl+V)"
+        title="Paste from Clipboard (Ctrl+V)"
+        onClick={() => {
+          if (navigator.clipboard?.readText) {
+            navigator.clipboard.readText().then(text => {
+              if (text) {
+                editor.chain().focus().insertContent(text).run();
+              }
+            }).catch(() => {});
+          }
+        }}
+        style={btnStyle(false, false)}
+      >
+        <Clipboard size={16} />
       </button>
 
       <div style={dividerStyle} />

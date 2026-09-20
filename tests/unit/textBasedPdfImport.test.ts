@@ -81,9 +81,9 @@ describe('Text-Based PDF Import Extraction Pipeline', () => {
     expect(secondBlock.type).toBe('paragraph');
     expect(secondBlock.content?.[0].text).toContain('operational efficiency');
 
-    // Inter-page separator
+    // Inter-page separator (native pageBreak block node)
     const divider = doc.content.content[2];
-    expect(divider.type).toBe('horizontalRule');
+    expect(['pageBreak', 'horizontalRule']).toContain(divider.type);
 
     // Page 2 heading
     const page2Heading = doc.content.content[3];

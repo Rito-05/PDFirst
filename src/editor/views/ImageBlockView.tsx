@@ -6,6 +6,7 @@ import {
   AlignCenter,
   AlignRight,
   Crop,
+  Copy,
   AlertCircle,
   WrapText,
   Trash2
@@ -15,6 +16,8 @@ import { ImageCropRegion } from '../../types/document';
 
 export const ImageBlockView: React.FC<NodeViewProps> = ({
   node,
+  editor,
+  getPos,
   updateAttributes,
   deleteNode,
   selected
@@ -92,13 +95,15 @@ export const ImageBlockView: React.FC<NodeViewProps> = ({
             zIndex: 40,
             display: 'flex',
             alignItems: 'center',
+            flexWrap: 'wrap',
             gap: '4px',
             padding: '4px 8px',
             backgroundColor: 'var(--color-bg-surface-elevated, #ffffff)',
             border: '1px solid var(--color-border-subtle, #cbd5e1)',
             borderRadius: '8px',
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            fontSize: '11px'
+            fontSize: '11px',
+            maxWidth: '100%'
           }}
         >
           {/* Alignment Controls */}
@@ -225,6 +230,33 @@ export const ImageBlockView: React.FC<NodeViewProps> = ({
           >
             <Crop size={12} />
             <span>Crop</span>
+          </button>
+
+          {/* Duplicate / Copy Image */}
+          <button
+            type="button"
+            title="Duplicate Image"
+            onClick={() => {
+              if (typeof getPos === 'function' && editor) {
+                const pos = getPos();
+                editor.chain().focus().insertContentAt(pos + node.nodeSize, {
+                  type: 'image',
+                  attrs: { ...node.attrs }
+                }).run();
+              }
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '3px',
+              padding: '3px 6px',
+              borderRadius: '4px',
+              background: 'transparent',
+              color: 'var(--color-text-secondary, #64748b)'
+            }}
+          >
+            <Copy size={12} />
+            <span>Duplicate</span>
           </button>
 
           {/* Delete Node */}

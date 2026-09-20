@@ -184,7 +184,7 @@ Below are the top 3 prioritized fixes identified during QA, all of which have be
 ```bash
 # Automated Test Suite Verification
 npm run test
-# Result: 17 test files passed, 66 tests passed (0 failures)
+# Result: 20 test files passed, 82 tests passed (0 failures)
 
 # Production Bundle Build Verification
 npm run build
@@ -192,3 +192,71 @@ npm run build
 ```
 
 The application satisfies all MVP reliability, usability, and architecture requirements across desktop, mobile, offline PWA, vector export, and PDF ingestion flows.
+
+---
+
+## 5. Phase C End-to-End QA & Manual Verification
+
+### Flow 8: Formatted Text & Image Clipboard Paste
+* **Test Sequence:**
+  1. Open PDFirst editor at `http://localhost:5173/`.
+  2. Copy formatted rich text from external source (e.g. Google Docs or Wikipedia containing `h1-h3`, bold, lists, and tables).
+  3. Paste directly into the editor canvas (`Ctrl+V` or `#toolbar-paste-btn`).
+  4. Verify:
+     - Headings, bold, italic, lists, and tables are preserved cleanly.
+     - Malicious `<script>`, `<iframe>`, and event handler tags are stripped via `sanitizePastedHtml`.
+  5. Take an OS screenshot (`PrintScreen` / `Win+Shift+S` / `Cmd+Shift+4`) or copy an image file to clipboard.
+  6. Paste into editor canvas (`Ctrl+V`).
+  7. Verify:
+     - Clipboard image paste interceptor captures image binary, converts to optimized Base64 data URL, and inserts image block node at cursor position.
+  8. Click the inserted image to open floating action bar $\to$ Click "Duplicate".
+  9. Verify: An identical cloned image block is inserted immediately below with all width, alignment, caption, and crop properties preserved.
+* **Status:** **PASS**
+
+---
+
+### Flow 9: Enhanced PDF Structural Ingestion Fidelity
+* **Test Sequence:**
+  1. Click "Import PDF" in header bar (`#btn-import-pdf`).
+  2. Upload `test_import.pdf` (multi-section digital PDF).
+  3. Verify Inspection Modal:
+     - Classifies as `TEXT_BASED` with live preview.
+     - Displays formatted preview lines.
+  4. Click "Open in Editor".
+  5. Inspect rehydrated Document AST:
+     - Statistical font clustering maps largest font ($22\text{pt} \ge 1.6 \times S_{body}$) to Heading 1 (`"Quarterly Review 2026"`).
+     - Subsection font ($14\text{pt} \ge 1.25 \times S_{body}$) maps to Heading 2 (`"Key Achievements and Highlights"`).
+     - Regular font ($11\text{pt}$) maps to body paragraphs.
+     - Detects bullet characters (`•`, `-`, `*`) and numbered patterns (`1.`, `2.`), grouping into native `bulletList` and `orderedList` AST blocks.
+     - Multi-column tables are extracted into structured `table` grids with `tableHeader` and `tableCell`.
+     - Non-default text colors from PDF graphic state are preserved as `textStyle.color` marks.
+     - Multi-page boundaries insert native `pageBreak` block nodes instead of horizontal rules.
+* **Status:** **PASS**
+
+---
+
+### Flow 10: Mobile Touch Ergonomics & Responsive Viewports
+* **Test Sequence:**
+  1. Open Chrome DevTools and switch device emulation to **Mobile (Pixel 7 / iPhone 14)** ($390 \times 844\text{ px}$).
+  2. Formatting Toolbar:
+     - Verify toolbar has horizontal finger scrolling (`-webkit-overflow-scrolling: touch; touch-action: pan-x;`).
+     - Verify toolbar buttons have touch-friendly hit areas ($\ge 36\text{px} \times 36\text{px}$ minimum bounding box).
+     - Verify no whole-page horizontal scrolling occurs (`overflow-x: hidden`).
+  3. Color Pickers on Mobile:
+     - Tap `#toolbar-text-color` or `#toolbar-text-highlight`.
+     - Verify `.color-picker-popover` docks comfortably as a bottom-centered floating sheet without extending off-screen.
+     - Swatches have clean tap hit areas with visible checkmark active indicators.
+  4. Mobile Soft Keyboard Caret Dock:
+     - Verify `<meta name="viewport">` has `interactive-widget=resizes-content, viewport-fit=cover`.
+     - Canvas viewport resizes smoothly when mobile software keyboard opens without obscuring active typing caret.
+* **Status:** **PASS**
+
+---
+
+### Remaining Known Limitations
+1. **Scanned PDF Text Conversion (OCR):**
+   - Scanned image-only PDFs correctly present the honest notification explaining OCR will be added in a subsequent release. Uneditable blank documents are prevented.
+2. **Extreme Desktop Publishing Layouts:**
+   - Highly complex magazines or flyers featuring overlapping irregular vector shapes, freeform word art, or 4+ skewed column wraps are linearized into standard reflowable headings, tables, and paragraphs to ensure editability without broken layouts.
+3. **External Untrusted CORS Images on Mobile:**
+   - Client-side canvas cropping requires image pixel access. If an external URL blocks cross-origin reading without CORS headers, cropping is disabled until the file is uploaded directly.

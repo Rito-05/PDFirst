@@ -9,6 +9,7 @@ import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
 import TableRow from '@tiptap/extension-table-row';
 import Link from '@tiptap/extension-link';
+import { sanitizePastedHtml } from './utils/sanitizeHtml';
 
 import { BlockBoxExtension } from './extensions/BlockBoxExtension';
 import { CustomTable, CustomTableCell, CustomTableHeader } from './extensions/CustomTableExtensions';
@@ -69,6 +70,48 @@ export const EditorCore: React.FC<EditorCoreProps> = ({
         'aria-label': 'Document Text Editor',
         role: 'textbox',
         'aria-multiline': 'true'
+      },
+      transformPastedHTML(html: string) {
+        return sanitizePastedHtml(html);
+      },
+      handlePaste(view, event) {
+        const clipboardData = event.clipboardData;
+        if (!clipboardData) return false;
+
+        // Intercept image file paste (screenshots, copied image files)
+        const items = clipboardData.items;
+        if (items) {
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.type.indexOf('image') !== -1) {
+              const file = item.getAsFile();
+              if (file) {
+                event.preventDefault();
+                const reader = new FileReader();
+                reader.onload = (loadEvent) => {
+                  const base64 = loadEvent.target?.result as string;
+                  if (base64 && view && !view.isDestroyed) {
+                    const { state, dispatch } = view;
+                    const imageType = state.schema.nodes.image;
+                    if (imageType) {
+                      const imageNode = imageType.create({
+                        src: base64,
+                        alt: file.name || 'Pasted image',
+                        width: '100%',
+                        alignment: 'center'
+                      });
+                      const tr = state.tr.replaceSelectionWith(imageNode);
+                      dispatch(tr.scrollIntoView());
+                    }
+                  }
+                };
+                reader.readAsDataURL(file);
+                return true;
+              }
+            }
+          }
+        }
+        return false;
       }
     },
     onUpdate: ({ editor }) => {
