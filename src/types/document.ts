@@ -59,9 +59,29 @@ export interface InlineContent {
   marks?: TextMark[];
 }
 
+export interface BlockBorderAttrs {
+  borderWidth?: number;          // 0, 1, 2, 4 pt/px
+  borderStyle?: 'solid' | 'dashed' | 'dotted';
+  borderColor?: string;          // Hex #RRGGBB
+  borderLeftOnly?: boolean;      // True for callout quote style
+  backgroundColor?: string;      // Hex #RRGGBB
+}
+
+export interface TableStyleAttrs {
+  borderWidth?: number;          // 0.5, 1, 2 pt
+  borderColor?: string;          // Hex #RRGGBB
+  borderGrid?: 'all' | 'outer' | 'horizontal' | 'none';
+  headerBackgroundColor?: string; // Hex #RRGGBB
+}
+
+export interface TableCellAttrs {
+  backgroundColor?: string;      // Hex #RRGGBB
+  colwidth?: number[];
+}
+
 export interface DocumentBlock {
   type: string;
-  attrs?: Record<string, any>;
+  attrs?: Record<string, any> & BlockBorderAttrs & TableStyleAttrs & TableCellAttrs;
   content?: any[];
   text?: string;
   marks?: TextMark[];

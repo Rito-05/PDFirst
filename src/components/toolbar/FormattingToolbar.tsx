@@ -8,6 +8,9 @@ import {
   Italic,
   Underline as UnderlineIcon,
   Strikethrough,
+  Palette,
+  Highlighter,
+  PaintBucket,
   List,
   ListOrdered,
   Quote,
@@ -20,6 +23,7 @@ import {
   Minus,
   Link as LinkIcon
 } from 'lucide-react';
+import { ColorPickerPopover } from '../common/ColorPickerPopover';
 
 interface FormattingToolbarProps {
   editor: Editor | null;
@@ -34,7 +38,16 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
   onOpenTableModal,
   onOpenLinkModal
 }) => {
+  const [isTextColorOpen, setIsTextColorOpen] = React.useState(false);
+  const [isHighlightOpen, setIsHighlightOpen] = React.useState(false);
+  const [isTableCellBgOpen, setIsTableCellBgOpen] = React.useState(false);
+
   if (!editor) return null;
+
+  const activeTextColor = editor.getAttributes('textStyle')?.color || '';
+  const activeHighlight = editor.getAttributes('highlight')?.color || '';
+  const activeCellBg = editor.getAttributes('tableCell')?.backgroundColor || editor.getAttributes('tableHeader')?.backgroundColor || '';
+  const isInsideTable = editor.isActive('table');
 
   const currentStyle = editor.isActive('heading', { level: 1 })
     ? 'h1'
@@ -191,6 +204,99 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
         <Strikethrough size={16} />
       </button>
 
+      {/* Text Color Picker */}
+      <div style={{ position: 'relative' }}>
+        <button
+          id="toolbar-text-color"
+          type="button"
+          aria-label="Text Color"
+          title="Text Color"
+          onClick={() => {
+            setIsTextColorOpen(!isTextColorOpen);
+            setIsHighlightOpen(false);
+            setIsTableCellBgOpen(false);
+          }}
+          style={{
+            ...btnStyle(Boolean(activeTextColor)),
+            flexDirection: 'column',
+            gap: '2px',
+            position: 'relative'
+          }}
+        >
+          <Palette size={14} />
+          <div
+            style={{
+              width: '14px',
+              height: '3px',
+              borderRadius: '2px',
+              backgroundColor: activeTextColor || 'var(--color-text-primary, #0f172a)'
+            }}
+          />
+        </button>
+
+        {isTextColorOpen && (
+          <ColorPickerPopover
+            color={activeTextColor || '#2563eb'}
+            presetType="text"
+            title="Text Color"
+            onChange={(color) => {
+              editor.chain().focus().setColor(color).run();
+            }}
+            onClear={() => {
+              editor.chain().focus().unsetColor().run();
+            }}
+            onClose={() => setIsTextColorOpen(false)}
+          />
+        )}
+      </div>
+
+      {/* Text Highlight / Background Picker */}
+      <div style={{ position: 'relative' }}>
+        <button
+          id="toolbar-text-highlight"
+          type="button"
+          aria-label="Highlight Color"
+          title="Highlight / Background Color"
+          onClick={() => {
+            setIsHighlightOpen(!isHighlightOpen);
+            setIsTextColorOpen(false);
+            setIsTableCellBgOpen(false);
+          }}
+          style={{
+            ...btnStyle(Boolean(activeHighlight)),
+            flexDirection: 'column',
+            gap: '2px',
+            position: 'relative'
+          }}
+        >
+          <Highlighter size={14} />
+          <div
+            style={{
+              width: '14px',
+              height: '3px',
+              borderRadius: '2px',
+              backgroundColor: activeHighlight || 'transparent',
+              border: activeHighlight ? 'none' : '1px solid var(--color-border-subtle, #cbd5e1)'
+            }}
+          />
+        </button>
+
+        {isHighlightOpen && (
+          <ColorPickerPopover
+            color={activeHighlight || '#fef08a'}
+            presetType="highlight"
+            title="Highlight Color"
+            onChange={(color) => {
+              editor.chain().focus().setHighlight({ color }).run();
+            }}
+            onClear={() => {
+              editor.chain().focus().unsetHighlight().run();
+            }}
+            onClose={() => setIsHighlightOpen(false)}
+          />
+        )}
+      </div>
+
       <button
         id="toolbar-link-btn"
         type="button"
@@ -309,6 +415,58 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
       >
         <TableIcon size={16} />
       </button>
+
+      {/* Table Context Styling */}
+      {isInsideTable && (
+        <>
+          <div style={{ position: 'relative' }}>
+            <button
+              id="toolbar-table-cell-bg"
+              type="button"
+              aria-label="Table Cell Background"
+              title="Table Cell Background Color"
+              onClick={() => {
+                setIsTableCellBgOpen(!isTableCellBgOpen);
+                setIsTextColorOpen(false);
+                setIsHighlightOpen(false);
+              }}
+              style={{
+                ...btnStyle(Boolean(activeCellBg)),
+                flexDirection: 'column',
+                gap: '2px',
+                position: 'relative'
+              }}
+            >
+              <PaintBucket size={14} />
+              <div
+                style={{
+                  width: '14px',
+                  height: '3px',
+                  borderRadius: '2px',
+                  backgroundColor: activeCellBg || 'transparent',
+                  border: activeCellBg ? 'none' : '1px solid var(--color-border-subtle, #cbd5e1)'
+                }}
+              />
+            </button>
+
+            {isTableCellBgOpen && (
+              <ColorPickerPopover
+                color={activeCellBg || '#eff6ff'}
+                presetType="table"
+                title="Cell Background"
+                align="right"
+                onChange={(color) => {
+                  editor.chain().focus().setCellAttribute('backgroundColor', color).run();
+                }}
+                onClear={() => {
+                  editor.chain().focus().setCellAttribute('backgroundColor', null).run();
+                }}
+                onClose={() => setIsTableCellBgOpen(false)}
+              />
+            )}
+          </div>
+        </>
+      )}
 
       <button
         id="toolbar-page-break"

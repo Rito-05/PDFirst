@@ -266,3 +266,73 @@
   color: var(--color-text-muted);
   letter-spacing: 0.08em;
 }
+
+/* Phase A Block Border & Background Styling */
+.ProseMirror p[data-border-width],
+.ProseMirror h1[data-border-width],
+.ProseMirror h2[data-border-width],
+.ProseMirror h3[data-border-width],
+.ProseMirror blockquote[data-border-width] {
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  margin: 1em 0;
+  transition: border-color var(--transition-fast);
+}
+
+.ProseMirror [data-border-width="1"] {
+  border-width: 1px;
+}
+
+.ProseMirror [data-border-width="2"] {
+  border-width: 2px;
+}
+
+.ProseMirror [data-border-width="4"] {
+  border-width: 4px;
+}
+
+.ProseMirror [data-border-style="solid"] {
+  border-style: solid;
+}
+
+.ProseMirror [data-border-style="dashed"] {
+  border-style: dashed;
+}
+
+.ProseMirror [data-border-style="dotted"] {
+  border-style: dotted;
+}
+
+.ProseMirror [data-border-left-only="true"] {
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0 !important;
+}
+
+/* Table Custom Border Grid & Styling */
+.ProseMirror table[data-border-grid="none"] th,
+.ProseMirror table[data-border-grid="none"] td {
+  border: 1px dashed rgba(203, 213, 225, 0.4) !important; /* Subtle guide in editor */
+}
+
+.ProseMirror table[data-border-grid="horizontal"] th,
+.ProseMirror table[data-border-grid="horizontal"] td {
+  border-left: none !important;
+  border-right: none !important;
+}
+
+.ProseMirror table[data-border-grid="outer"] {
+  border: 2px solid var(--table-border-color, #94a3b8) !important;
+}
+
+.ProseMirror table[data-border-grid="outer"] th,
+.ProseMirror table[data-border-grid="outer"] td {
+  border: none !important;
+}
+
+.ProseMirror th[data-cell-bg],
+.ProseMirror td[data-cell-bg] {
+  /* Set inline via style attribute in extension, supported by data-cell-bg */
+}
+

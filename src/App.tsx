@@ -245,6 +245,7 @@ export const App: React.FC = () => {
 
               <PropertiesSidebar
                 document={activeDoc}
+                editor={editorInstance}
                 isOpen={isPropertiesOpen}
                 onUpdateSettings={handleUpdateSettings}
                 onClose={() => setIsPropertiesOpen(false)}

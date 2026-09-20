@@ -47,11 +47,75 @@ export async function exportDocumentToPdf(
 
   let cursorY = margins.top;
 
+  function hexToRgb(hex?: string): [number, number, number] {
+    if (!hex) return [40, 45, 55];
+    const clean = hex.replace('#', '').trim();
+    if (clean.length === 3) {
+      return [
+        parseInt(clean[0] + clean[0], 16),
+        parseInt(clean[1] + clean[1], 16),
+        parseInt(clean[2] + clean[2], 16)
+      ];
+    }
+    if (clean.length === 6) {
+      return [
+        parseInt(clean.substring(0, 2), 16),
+        parseInt(clean.substring(2, 4), 16),
+        parseInt(clean.substring(4, 6), 16)
+      ];
+    }
+    return [40, 45, 55];
+  }
+
+  function getLuminance(rgb: [number, number, number]): number {
+    return (rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114) / 255;
+  }
+
   function checkPageBreak(requiredHeight: number) {
     if (cursorY + requiredHeight > pageHeight - margins.bottom) {
       pdf.addPage(pageSize.toLowerCase() as 'a4' | 'letter', orientation);
       cursorY = margins.top;
     }
+  }
+
+  // Helper to render text lines with inline color and highlight marks
+  function renderTextLinesWithMarks(
+    text: string,
+    x: number,
+    fontSize: number,
+    lineHeight: number,
+    baseWidth: number,
+    primaryColor: [number, number, number],
+    markColor?: string,
+    markHighlight?: string
+  ): number {
+    const lines = pdf.splitTextToSize(text, baseWidth);
+    const height = lines.length * lineHeight;
+    checkPageBreak(height + 4);
+
+    // If highlight is applied, draw vector background rectangle behind text lines
+    if (markHighlight) {
+      const [hr, hg, hb] = hexToRgb(markHighlight);
+      pdf.setFillColor(hr, hg, hb);
+      let lineCursorY = cursorY;
+      for (const line of lines) {
+        const lineWidth = pdf.getStringUnitWidth(line) * fontSize;
+        pdf.rect(x, lineCursorY - fontSize + 2, lineWidth + 2, fontSize + 2, 'F');
+        lineCursorY += lineHeight;
+      }
+    }
+
+    // Set text color (custom or primary)
+    if (markColor) {
+      const [tr, tg, tb] = hexToRgb(markColor);
+      pdf.setTextColor(tr, tg, tb);
+    } else {
+      pdf.setTextColor(...primaryColor);
+    }
+
+    pdf.text(lines, x, cursorY);
+    cursorY += height;
+    return height;
   }
 
   // Iterate top-level blocks in doc.content.content
@@ -66,18 +130,31 @@ export async function exportDocumentToPdf(
         const fontSize = level === 1 ? 22 : level === 2 ? 16 : 13;
         const spacingBefore = level === 1 ? 18 : 14;
         const spacingAfter = 8;
+        const lineHeight = fontSize * 1.25;
 
         cursorY += spacingBefore;
-        checkPageBreak(fontSize + spacingAfter);
 
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(fontSize);
-        pdf.setTextColor(20, 25, 40);
+
+        // Check for block-level or first run marks
+        const firstRun = block.content?.[0];
+        const markColor = firstRun?.marks?.find((m: any) => m.type === 'textStyle')?.attrs?.color;
+        const markHighlight = firstRun?.marks?.find((m: any) => m.type === 'highlight')?.attrs?.color;
 
         const text = extractBlockPlainText(block);
-        const lines = pdf.splitTextToSize(text, contentWidth);
-        pdf.text(lines, margins.left, cursorY);
-        cursorY += lines.length * (fontSize * 1.25) + spacingAfter;
+        renderTextLinesWithMarks(
+          text,
+          margins.left,
+          fontSize,
+          lineHeight,
+          contentWidth,
+          [20, 25, 40],
+          markColor,
+          markHighlight
+        );
+
+        cursorY += spacingAfter;
         break;
       }
 
@@ -92,13 +169,76 @@ export async function exportDocumentToPdf(
         const lineHeight = fontSize * 1.5;
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(fontSize);
-        pdf.setTextColor(40, 45, 55);
 
-        const lines = pdf.splitTextToSize(text, contentWidth);
-        checkPageBreak(lines.length * lineHeight + 6);
+        // Check block border and background attributes
+        const hasBorder = Boolean(block.attrs?.borderWidth);
+        const hasBg = Boolean(block.attrs?.backgroundColor);
+        const padX = (hasBorder || hasBg) ? 12 : 0;
+        const padY = (hasBorder || hasBg) ? 8 : 0;
+        const usableWidth = contentWidth - (padX * 2);
 
-        pdf.text(lines, margins.left, cursorY);
-        cursorY += lines.length * lineHeight + 6;
+        const startY = cursorY;
+        cursorY += padY;
+
+        // Check for marks in content runs
+        const firstRun = block.content?.[0];
+        const markColor = firstRun?.marks?.find((m: any) => m.type === 'textStyle')?.attrs?.color;
+        const markHighlight = firstRun?.marks?.find((m: any) => m.type === 'highlight')?.attrs?.color;
+
+        renderTextLinesWithMarks(
+          text,
+          margins.left + padX,
+          fontSize,
+          lineHeight,
+          usableWidth,
+          [40, 45, 55],
+          markColor,
+          markHighlight
+        );
+
+        cursorY += padY;
+        const blockHeight = cursorY - startY;
+
+        // Render block background fill if present
+        if (hasBg) {
+          const [br, bg, bb] = hexToRgb(block.attrs?.backgroundColor);
+          pdf.setFillColor(br, bg, bb);
+          pdf.roundedRect(margins.left, startY, contentWidth, blockHeight, 3, 3, 'F');
+          // Re-render text on top of background
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(fontSize);
+          const lines = pdf.splitTextToSize(text, usableWidth);
+          if (markColor) {
+            pdf.setTextColor(...hexToRgb(markColor));
+          } else {
+            pdf.setTextColor(40, 45, 55);
+          }
+          pdf.text(lines, margins.left + padX, startY + padY + fontSize - 2);
+        }
+
+        // Render block border if present
+        if (hasBorder) {
+          const [dr, dg, db] = hexToRgb(block.attrs?.borderColor || '#2563eb');
+          pdf.setDrawColor(dr, dg, db);
+          pdf.setLineWidth(block.attrs?.borderWidth || 1);
+
+          if (block.attrs?.borderStyle === 'dashed') {
+            pdf.setLineDashPattern([4, 2], 0);
+          } else if (block.attrs?.borderStyle === 'dotted') {
+            pdf.setLineDashPattern([1, 2], 0);
+          } else {
+            pdf.setLineDashPattern([], 0);
+          }
+
+          if (block.attrs?.borderLeftOnly) {
+            pdf.line(margins.left, startY, margins.left, startY + blockHeight);
+          } else {
+            pdf.roundedRect(margins.left, startY, contentWidth, blockHeight, 3, 3, 'S');
+          }
+          pdf.setLineDashPattern([], 0);
+        }
+
+        cursorY += 6;
         break;
       }
 
@@ -137,33 +277,55 @@ export async function exportDocumentToPdf(
         const lineHeight = fontSize * 1.5;
         pdf.setFont('helvetica', 'italic');
         pdf.setFontSize(fontSize);
-        pdf.setTextColor(80, 90, 105);
 
         const indent = 16;
         const lines = pdf.splitTextToSize(text, contentWidth - indent);
         const boxHeight = lines.length * lineHeight + 8;
         checkPageBreak(boxHeight + 8);
 
-        // Draw left accent line
-        pdf.setDrawColor(37, 99, 235);
-        pdf.setLineWidth(2.5);
+        // Draw left accent line or custom border
+        const accentColor = block.attrs?.borderColor || '#2563eb';
+        const [ar, ag, ab] = hexToRgb(accentColor);
+        pdf.setDrawColor(ar, ag, ab);
+        pdf.setLineWidth(block.attrs?.borderWidth || 2.5);
         pdf.line(margins.left, cursorY - 2, margins.left, cursorY + boxHeight - 6);
 
+        if (block.attrs?.backgroundColor) {
+          const [br, bg, bb] = hexToRgb(block.attrs.backgroundColor);
+          pdf.setFillColor(br, bg, bb);
+          pdf.rect(margins.left + 4, cursorY - 4, contentWidth - 4, boxHeight, 'F');
+        }
+
+        pdf.setTextColor(80, 90, 105);
         pdf.text(lines, margins.left + indent, cursorY + 4);
         cursorY += boxHeight + 8;
         break;
       }
 
       case 'table': {
-        const headRows: string[][] = [];
-        const bodyRows: string[][] = [];
+        const headRows: any[][] = [];
+        const bodyRows: any[][] = [];
         const rows = block.content || [];
 
         rows.forEach((rowNode: any, rIdx: number) => {
           const cells = rowNode.content || [];
-          const rowData: string[] = [];
+          const rowData: any[] = [];
           cells.forEach((cellNode: any) => {
-            rowData.push(extractBlockPlainText(cellNode).trim());
+            const cellText = extractBlockPlainText(cellNode).trim();
+            const cellBg = cellNode.attrs?.backgroundColor;
+            if (cellBg) {
+              const rgb = hexToRgb(cellBg);
+              const lum = getLuminance(rgb);
+              rowData.push({
+                content: cellText,
+                styles: {
+                  fillColor: rgb,
+                  textColor: lum < 0.45 ? [255, 255, 255] : [40, 45, 55]
+                }
+              });
+            } else {
+              rowData.push(cellText);
+            }
           });
 
           if (rIdx === 0 && (block.attrs?.hasHeaderRow || cells[0]?.type === 'tableHeader')) {
@@ -175,22 +337,28 @@ export async function exportDocumentToPdf(
 
         checkPageBreak(50);
 
+        const borderWidth = block.attrs?.borderWidth ?? 0.75;
+        const borderColor = block.attrs?.borderColor ? hexToRgb(block.attrs.borderColor) : [203, 213, 225];
+        const grid = block.attrs?.borderGrid || 'all';
+        const headerBg = block.attrs?.headerBackgroundColor ? hexToRgb(block.attrs.headerBackgroundColor) : [239, 246, 255];
+        const headerLum = getLuminance(headerBg as [number, number, number]);
+
         autoTable(pdf, {
           startY: cursorY + 4,
           head: headRows.length > 0 ? headRows : undefined,
           body: bodyRows,
           margin: { left: margins.left, right: margins.right },
-          theme: 'grid',
+          theme: grid === 'none' ? 'plain' : grid === 'horizontal' ? 'striped' : 'grid',
           styles: {
             fontSize: 9.5,
             cellPadding: 6,
             textColor: [40, 45, 55],
-            lineColor: [203, 213, 225],
-            lineWidth: 0.75
+            lineColor: borderColor as [number, number, number],
+            lineWidth: grid === 'none' ? 0 : borderWidth
           },
           headStyles: {
-            fillColor: [239, 246, 255],
-            textColor: [15, 23, 42],
+            fillColor: headerBg as [number, number, number],
+            textColor: headerLum < 0.45 ? [255, 255, 255] : [15, 23, 42],
             fontStyle: 'bold'
           }
         });
