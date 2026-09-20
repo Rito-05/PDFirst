@@ -370,18 +370,72 @@ export async function exportDocumentToPdf(
 
       case 'image': {
         const src = block.attrs?.src;
-        if (src && src.startsWith('data:image')) {
-          try {
-            const imgWidth = Math.min(contentWidth, 400);
-            const imgHeight = (imgWidth * 9) / 16; // Standard ratio fallback
+        const rawWidth = block.attrs?.width || '75%';
+        let targetWidth = 400;
 
-            checkPageBreak(imgHeight + 20);
-            pdf.addImage(src, 'JPEG', margins.left + (contentWidth - imgWidth) / 2, cursorY, imgWidth, imgHeight);
-            cursorY += imgHeight + 16;
-          } catch (e) {
-            console.warn('Could not render image in PDF:', e);
-          }
+        if (typeof rawWidth === 'string' && rawWidth.endsWith('%')) {
+          const pct = parseFloat(rawWidth) / 100;
+          targetWidth = Math.min(contentWidth, contentWidth * (pct || 0.75));
+        } else if (typeof rawWidth === 'number') {
+          targetWidth = Math.min(contentWidth, rawWidth);
+        } else if (typeof rawWidth === 'string') {
+          targetWidth = Math.min(contentWidth, parseFloat(rawWidth) || 400);
         }
+
+        const targetHeight = (targetWidth * 9) / 16;
+        const alignment = block.attrs?.alignment || 'center';
+        let startX = margins.left;
+        if (alignment === 'center') {
+          startX = margins.left + (contentWidth - targetWidth) / 2;
+        } else if (alignment === 'right') {
+          startX = margins.left + contentWidth - targetWidth;
+        }
+
+        const caption = block.attrs?.caption?.trim();
+        const captionHeight = caption ? 16 : 0;
+        checkPageBreak(targetHeight + captionHeight + 20);
+
+        try {
+          if (src && (src.startsWith('data:image') || src.startsWith('blob:'))) {
+            const format = src.includes('png') ? 'PNG' : 'JPEG';
+            pdf.addImage(src, format, startX, cursorY, targetWidth, targetHeight);
+          } else {
+            throw new Error('Image source is not an embeddable data URL');
+          }
+        } catch (e) {
+          // Robust non-crashing vector placeholder fallback box
+          pdf.setDrawColor(203, 213, 225);
+          pdf.setLineWidth(0.75);
+          pdf.setFillColor(248, 250, 252);
+          pdf.roundedRect(startX, cursorY, targetWidth, targetHeight, 4, 4, 'FD');
+
+          pdf.setFont('helvetica', 'italic');
+          pdf.setFontSize(9);
+          pdf.setTextColor(148, 163, 184);
+          const fallbackText = block.attrs?.alt ? `[Image: ${block.attrs.alt}]` : '[Image unavailable]';
+          const tw = pdf.getStringUnitWidth(fallbackText) * 9;
+          pdf.text(fallbackText, Math.max(startX + 10, startX + (targetWidth - tw) / 2), cursorY + targetHeight / 2);
+        }
+
+        cursorY += targetHeight + 6;
+
+        // Render caption if present
+        if (caption) {
+          pdf.setFont('helvetica', 'italic');
+          pdf.setFontSize(8.5);
+          pdf.setTextColor(100, 116, 139);
+          const capLines = pdf.splitTextToSize(caption, targetWidth);
+          pdf.text(capLines, startX, cursorY);
+          cursorY += capLines.length * 11;
+        }
+
+        cursorY += 12;
+        break;
+      }
+
+      case 'pageBreak': {
+        pdf.addPage(pageSize.toLowerCase() as 'a4' | 'letter', orientation);
+        cursorY = margins.top;
         break;
       }
 

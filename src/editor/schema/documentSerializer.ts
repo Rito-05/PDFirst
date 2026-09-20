@@ -10,26 +10,28 @@ export function calculateTelemetry(content: { type: string; content?: DocumentBl
   pageCount: number;
 } {
   let textBuffer = '';
-
-  function extractText(node: any) {
+  let pageBreaks = 0;
+  function inspectNodes(node: any) {
     if (!node) return;
+    if (node.type === 'pageBreak') pageBreaks++;
     if (node.text) {
       textBuffer += node.text + ' ';
     }
     if (node.content && Array.isArray(node.content)) {
       for (const child of node.content) {
-        extractText(child);
+        inspectNodes(child);
       }
     }
   }
 
-  extractText(content);
+  inspectNodes(content);
   const clean = textBuffer.trim();
   const words = clean ? clean.split(/\s+/).length : 0;
   const characters = clean.length;
 
-  // Approximate page count: standard A4 page holds ~450 words or ~3000 chars
-  const pageCount = Math.max(1, Math.ceil(words / 400));
+  // Approximate page count: standard page holds ~400 words, plus explicit page breaks
+  const wordBasedPages = Math.max(1, Math.ceil(words / 400));
+  const pageCount = Math.max(wordBasedPages, pageBreaks + 1);
 
   return {
     wordCount: words,

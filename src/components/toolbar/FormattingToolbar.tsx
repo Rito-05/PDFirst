@@ -21,6 +21,7 @@ import {
   Image as ImageIcon,
   Table as TableIcon,
   Minus,
+  FilePlus,
   Link as LinkIcon
 } from 'lucide-react';
 import { ColorPickerPopover } from '../common/ColorPickerPopover';
@@ -471,12 +472,18 @@ export const FormattingToolbar: React.FC<FormattingToolbarProps> = ({
       <button
         id="toolbar-page-break"
         type="button"
-        aria-label="Insert Page Break"
-        title="Insert Page Break (Horizontal Divider)"
-        onClick={() => editor.chain().focus().setHorizontalRule().run()}
+        aria-label="Insert Page Break (Ctrl+Enter)"
+        title="Insert Page Break (Ctrl+Enter)"
+        onClick={() => {
+          if ((editor.commands as any).setPageBreak) {
+            (editor.chain().focus() as any).setPageBreak().run();
+          } else {
+            editor.chain().focus().setHorizontalRule().run();
+          }
+        }}
         style={btnStyle(false)}
       >
-        <Minus size={16} />
+        <FilePlus size={16} />
       </button>
     </nav>
   );

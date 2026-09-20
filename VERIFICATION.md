@@ -196,3 +196,51 @@ npm install react-colorful react-image-crop dompurify; npm install -D @types/dom
 2. **Block Border Page Splitting:** If a bordered blockquote or paragraph is exceptionally long and crosses an automatic page break, the vector compiler closes the border at the bottom margin and restarts at the top margin of the following page.
 3. **Table Cell Selection:** Tiptap applies cell background colors to the active focused cell. Multi-cell drag selection color fills will be expanded in Phase C.
 
+---
+
+## 8. Phase B: Image Handling & Page Management Verification
+
+**Date:** September 20, 2026  
+**Auditor:** Antigravity Verification Engineering  
+**Scope:** Phase B (Image Multi-source Insertion, Client-Side Rectangular Crop, Alignment, Width Presets, Captions, Wrap Modes, Broken Image Fallback, Multi-Page Sheets & Breaks)  
+**Status:** PASSED (19/19 Test Suites Passed | 76/76 Tests Passed | 0 TypeScript Errors)
+
+### 8.1 Summary of Phase B Changes
+1. **Multi-Source Image Insertion:**
+   - URL insertion modal (`#toolbar-insert-image`) with validation, preview, and autofocus.
+   - Robust local file upload (`#toolbar-upload-image`) reading images as Base64 data URLs with file type checking (`image/png`, `image/jpeg`, `image/webp`, `image/gif`, `image/svg+xml`).
+2. **Interactive NodeView Image Toolbar (`ImageBlockView.tsx`):**
+   - **Alignment Controls:** Left (`margin-right: auto`), Center (`margin: 0 auto`), and Right (`margin-left: auto`).
+   - **Width Presets:** 25%, 50%, 75%, 100% responsive widths with visual active state indicators.
+   - **Wrap Modes:** None (Block-level break), Left (`float: left`), Right (`float: right`) with proper margins and clearfixes.
+   - **Inline Editable Captions:** Seamless `<figcaption>` rendered beneath the image with live binding to AST `caption` attribute.
+   - **Client-Side Rectangular Cropping:** Integrated `react-image-crop` modal supporting Free, 1:1, 4:3, and 16:9 aspect ratios, client-side HTML5 canvas pixel extraction, non-destructive cropping, and automatic AST attribute update.
+3. **Robust Broken Image Handling:**
+   - In DOM/Editor: If an image fails to load (HTTP 404, invalid URL, or offline asset), an inline alert card with `AlertCircle` icon, friendly warning message, and source URL is rendered instead of breaking the editor.
+   - In PDF Export: Vector PDF generator uses a `try...catch` wrapper that catches broken image data and draws a styled vector placeholder box with a dashed border and `[Image: <caption/alt>]` label without crashing the export pipeline.
+4. **Page Management & Visual Page Sheets:**
+   - **Page Break Extension (`PageBreakExtension.ts`):** Registered atom node `pageBreak` with `setPageBreak` command and `Mod-Enter` (`Ctrl+Enter` / `Cmd+Enter`) shortcut.
+   - **Toolbar Integration:** Added Page Break button (`#toolbar-page-break`) with `FilePlus` icon.
+   - **Visual Separation in Editor:** Rendered distinct page break divider with label (`Page Break`), dashed border, and page divider styling.
+   - **Page Settings Consistency:** Document canvas page sheets respect page orientation (`portrait` vs `landscape`) with exact print dimension styling (A4: $794\text{px} \times 1123\text{px}$ vs $1123\text{px} \times 794\text{px}$, Letter: $816\text{px} \times 1056\text{px}$ vs $1056\text{px} \times 816\text{px}$) and dynamic margin rendering.
+   - **Telemetry:** Serialization updates `pageCount` based on manual page breaks ($\ge \text{breaks} + 1$).
+   - **Vector PDF Generator:** Accurately issues `pdf.addPage()`, resets cursor coordinates to top margin, and preserves header/footer geometry.
+
+### 8.2 New Test Coverage
+- **Total Test Suites:** **19** (all passing)
+- **Total Tests:** **76** (all passing)
+- **New Test Files Added:**
+  - [`tests/unit/phaseBImageAndPage.test.ts`](file:///c:/Users/ritol/OneDrive/Desktop/PDFirst/tests/unit/phaseBImageAndPage.test.ts):
+    1. *Image Node Attributes Serialization:* Validates complete round-trip preservation of `src`, `alt`, `width`, `alignment`, `caption`, `wrap`, and `crop` in AST JSON.
+    2. *Page Break Serialization & Telemetry:* Validates `pageBreak` block nodes serialize cleanly and `calculateTelemetry` computes correct page count ($\ge \text{breaks} + 1$).
+    3. *Vector PDF Exporter Multi-Page Break Handling:* Validates that page break nodes call `pdf.addPage()` and advance page cursor coordinates correctly.
+    4. *Vector PDF Image Alignment & Caption Rendering:* Validates alignment offset computation, aspect ratio scaling, and caption text output.
+    5. *Broken Image Resilience in PDF Export:* Verifies non-crashing fallback box rendering with dashed borders and error labels when an image source is invalid or unresolvable.
+    6. *Canvas & Document Orientation Geometry:* Confirms page size and landscape/portrait dimensions correlate with vector PDF output page setups.
+
+### 8.3 Known Limitations for Phase B
+1. **Complex Text Wrap on Narrow Mobile Viewports:** On small mobile screens ($< 480\text{px}$), images set to `wrap: 'left'` or `wrap: 'right'` with widths $> 50\%$ may leave very narrow space for adjacent inline text. The responsive CSS adapts by setting `max-width: 100%` and stacking below $640\text{px}$ if text lines become too narrow.
+2. **Touch Drag Handles vs Button Presets:** To ensure robust cross-platform reliability on touch devices and avoid ProseMirror native drag conflicts, resizing uses high-precision width presets ($25\%$, $50\%$, $75\%$, $100\%$) alongside cropping rather than erratic freeform drag corners.
+3. **CORS on Remote External URLs:** When inserting images via external `http://` / `https://` URLs from servers that disallow Cross-Origin Resource Sharing (`Access-Control-Allow-Origin`), the browser canvas cannot read raw pixels for client-side cropping (`tainted canvas`). Users are warned and can upload the file directly to enable local cropping.
+
+

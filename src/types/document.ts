@@ -46,6 +46,7 @@ export type BlockType =
   | 'image'
   | 'blockquote'
   | 'horizontalRule'
+  | 'pageBreak'
   | 'codeBlock';
 
 export interface TextMark {
@@ -79,9 +80,30 @@ export interface TableCellAttrs {
   colwidth?: number[];
 }
 
+export interface ImageCropRegion {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface ImageBlockAttrs {
+  src?: string;
+  alt?: string;
+  caption?: string;
+  width?: number | string;        // e.g. "50%" or 400
+  alignment?: 'left' | 'center' | 'right';
+  wrap?: 'none' | 'square' | 'tight';
+  cropRegion?: ImageCropRegion;
+}
+
+export interface PageBreakAttrs {
+  id?: string;
+}
+
 export interface DocumentBlock {
   type: string;
-  attrs?: Record<string, any> & BlockBorderAttrs & TableStyleAttrs & TableCellAttrs;
+  attrs?: Record<string, any> & BlockBorderAttrs & TableStyleAttrs & TableCellAttrs & ImageBlockAttrs & PageBreakAttrs;
   content?: any[];
   text?: string;
   marks?: TextMark[];

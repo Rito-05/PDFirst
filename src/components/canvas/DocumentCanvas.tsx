@@ -41,7 +41,7 @@ export const DocumentCanvas: React.FC<DocumentCanvasProps> = ({
         <article
           id="document-page-sheet"
           aria-label="Document Page Canvas"
-          className={`page-sheet size-${pageSize} margins-${marginPreset}`}
+          className={`page-sheet size-${pageSize} orientation-${document.settings.orientation || 'portrait'} margins-${marginPreset}`}
         >
           <EditorCore
             document={document}

@@ -4,7 +4,6 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
-import Image from '@tiptap/extension-image';
 import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
@@ -13,6 +12,8 @@ import Link from '@tiptap/extension-link';
 
 import { BlockBoxExtension } from './extensions/BlockBoxExtension';
 import { CustomTable, CustomTableCell, CustomTableHeader } from './extensions/CustomTableExtensions';
+import { CustomImageExtension } from './extensions/CustomImageExtension';
+import { PageBreakExtension } from './extensions/PageBreakExtension';
 import { DocumentModel } from '../types/document';
 import { autosaveManager } from '../storage/autosaveManager';
 
@@ -48,10 +49,8 @@ export const EditorCore: React.FC<EditorCoreProps> = ({
         types: ['heading', 'paragraph']
       }),
       BlockBoxExtension,
-      Image.configure({
-        allowBase64: true,
-        inline: false
-      }),
+      CustomImageExtension,
+      PageBreakExtension,
       CustomTable.configure({
         resizable: true
       }),

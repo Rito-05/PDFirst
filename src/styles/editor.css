@@ -42,6 +42,16 @@
   min-height: 1056px;
 }
 
+.page-sheet.orientation-landscape.size-A4 {
+  width: 1123px;
+  min-height: 794px;
+}
+
+.page-sheet.orientation-landscape.size-LETTER {
+  width: 1056px;
+  min-height: 816px;
+}
+
 /* Margin Presets */
 .page-sheet.margins-normal {
   padding: 54px 54px;
@@ -334,5 +344,53 @@
 .ProseMirror th[data-cell-bg],
 .ProseMirror td[data-cell-bg] {
   /* Set inline via style attribute in extension, supported by data-cell-bg */
+}
+
+/* Phase B Visual Page Break Sheet Separation */
+.ProseMirror div[data-type="page-break"] {
+  position: relative;
+  margin: 36px 0;
+  height: 28px;
+  background-color: var(--color-bg-app);
+  border-top: 1px dashed var(--color-border-strong);
+  border-bottom: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ProseMirror div[data-type="page-break"]::after {
+  content: "PAGE BREAK — NEW SHEET";
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  letter-spacing: 0.1em;
+  background-color: var(--color-bg-canvas);
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.ProseMirror div[data-type="page-break"].ProseMirror-selectednode {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+
+/* Phase B Image Wrapper & Action Controls */
+.editor-image-wrapper {
+  transition: box-shadow var(--transition-fast);
+}
+
+.editor-image-wrapper.is-selected {
+  outline: 2px solid var(--color-brand-primary);
+  outline-offset: 3px;
+  border-radius: var(--radius-md);
+}
+
+.editor-image-wrapper figcaption input:focus {
+  border-bottom: 1px dashed var(--color-brand-primary) !important;
 }
 
